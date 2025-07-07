@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  api:
+    build: .
+    command: npm run dev
+    ports:
+      - '5000:5000'
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/agri_backend
+      - REDIS_URL=redis://redis:6379
+      - JWT_ACCESS_SECRET=changeme
+      - JWT_REFRESH_SECRET=changeme2
+    depends_on:
+      - mongo
+      - redis
+
+  mongo:
+    image: mongo:7
+    restart: always
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - '27017:27017'
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - '6379:6379'
+
+volumes:
+  mongo_data:
