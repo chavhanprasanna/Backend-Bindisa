@@ -15,6 +15,7 @@ import cropSuggestionRoutes from './routes/cropSuggestionRoutes.js';
 import profitEntryRoutes from './routes/profitEntryRoutes.js';
 import offlineSyncRoutes from './routes/offlineSyncRoutes.js';
 import videoTutorialRoutes from './routes/videoTutorialRoutes.js';
+import locationRoutes from './routes/location.routes.js';
 
 import errorHandler from './middlewares/errorHandler.js';
 
@@ -40,6 +41,7 @@ app.use('/ai/crop-suggestions', cropSuggestionRoutes);
 app.use('/profit-calculator', profitEntryRoutes);
 app.use('/sync', offlineSyncRoutes);
 app.use('/support/tutorials', videoTutorialRoutes);
+app.use('/api', locationRoutes);
 
 app.use('*', (req, res) => res.status(404).json({ message: 'Route not found' }));
 app.use(errorHandler);
