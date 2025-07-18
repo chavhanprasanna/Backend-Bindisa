@@ -10,7 +10,7 @@ const notificationSchema = new Schema({
   message: { type: String, required: true },
   type: { type: String, enum: ['SYSTEM_ALERT', 'WEATHER', 'MARKET_PRICE', 'TASK_REMINDER'], required: true },
   priority: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
-  isRead: { type: Boolean, default: false },
+  isRead: { type: Boolean, default: false }
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 
 export default mongoose.model('Notification', notificationSchema);

@@ -8,7 +8,7 @@ const syncLogSchema = new Schema({
   userId: { type: String, ref: 'User', required: true, index: true },
   syncTimestamp: { type: Date, default: Date.now },
   status: { type: String, enum: ['SUCCESS', 'FAILED', 'PENDING'], required: true },
-  dataSummary: { type: Schema.Types.Mixed },
+  dataSummary: { type: Schema.Types.Mixed }
 }, { timestamps: false });
 
 export default mongoose.model('OfflineSyncLog', syncLogSchema);

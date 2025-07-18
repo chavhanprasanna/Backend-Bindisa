@@ -16,7 +16,7 @@ async function _analyzeAndGenerateRecommendations(test) {
       type: 'WARNING',
       title: 'pH Imbalance Detected',
       description: 'Low pH can lock nutrients. Consider applying agricultural lime to raise soil pH.',
-      actionRequired: 'Apply lime and retest in 30 days.',
+      actionRequired: 'Apply lime and retest in 30 days.'
     });
   }
 
@@ -27,7 +27,7 @@ async function _analyzeAndGenerateRecommendations(test) {
       type: 'WARNING',
       title: 'Urgent: Low Potassium Levels',
       description: 'Potassium deficiency can reduce yield. Apply a potassium-rich fertilizer.',
-      actionRequired: 'Broadcast muriate of potash as per soil test report.',
+      actionRequired: 'Broadcast muriate of potash as per soil test report.'
     });
   }
 
@@ -38,7 +38,7 @@ async function _analyzeAndGenerateRecommendations(test) {
     type: 'SOIL_FERTILITY',
     title: 'Improve Organic Matter',
     description: 'Incorporate compost or green manure to improve soil structure and microbial activity.',
-    actionRequired: 'Add 5–10 tons/acre well-decomposed compost before next planting.',
+    actionRequired: 'Add 5–10 tons/acre well-decomposed compost before next planting.'
   });
 
   if (!recs.length) return [];

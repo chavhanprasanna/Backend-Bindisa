@@ -13,8 +13,8 @@ const soilTestSchema = new Schema({
   npkAnalysis: {
     nitrogen: { type: Number, required: true },
     phosphorus: { type: Number, required: true },
-    potassium: { type: Number, required: true },
-  },
+    potassium: { type: Number, required: true }
+  }
 }, { timestamps: { createdAt: 'testDate', updatedAt: false } });
 
 export default mongoose.model('SoilTest', soilTestSchema);

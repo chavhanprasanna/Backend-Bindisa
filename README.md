@@ -18,6 +18,143 @@ A robust backend API for AgriTech applications, providing features for farm mana
 - **Offline Support** - Sync data when connection is restored
 - **Support System** - Integrated chat and bug reporting
 - **Video Tutorials** - Educational content for farmers
+
+## 📚 API Endpoints
+
+> Base URL: `/api`
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/status` | Public | Health-check endpoint |
+| POST | `/v1/auth/register` | Public | Register new user (email/phone) |
+| POST | `/v1/auth/login` | Public | Standard login (email + password) |
+| POST | `/v1/auth/otp-login` | Public | Combined register/login via OTP |
+| POST | `/v1/auth/logout` | Auth | Invalidate refresh token |
+| POST | `/v1/auth/refresh` | Public | Refresh access token |
+| GET | `/v1/users/me` | Auth | Get current user profile |
+| PUT | `/v1/users/me` | Auth | Update profile |
+| GET | `/v1/users/:id` | Auth('admin') | Get user by ID |
+| GET | `/v1/farms` | Auth | List farms for current user |
+| POST | `/v1/farms` | Auth | Create farm |
+| GET | `/v1/farms/:id` | Auth | Get farm details |
+| PUT | `/v1/farms/:id` | Auth | Update farm |
+| DELETE | `/v1/farms/:id` | Auth | Delete farm |
+| GET | `/v1/cycles` | Auth | List crop cycles |
+| POST | `/v1/cycles` | Auth | Create crop cycle |
+| GET | `/v1/tests` | Auth | List soil tests |
+| POST | `/v1/tests` | Auth | Add soil test |
+| GET | `/v1/notifications` | Auth | List FCM tokens & notifications |
+| POST | `/v1/support/bug-reports` | Auth | Submit bug report |
+| GET | `/v1/support/chat/messages` | Auth | Fetch support chat messages |
+| POST | `/v1/support/chat/messages` | Auth | Send chat message |
+| POST | `/v1/ai/crop-suggestions` | Auth | Get AI crop suggestions |
+| POST | `/v1/profit-calculator/entries` | Auth | Add profit entry |
+| GET | `/v1/sync/pull` | Auth | Pull offline changes |
+| POST | `/v1/sync/push` | Auth | Push offline changes |
+| GET | `/v1/support/tutorials` | Public | List video tutorials |
+| GET | `/v1/locations` | Public | Lookup locations |
+| POST | `/v1/otp/request` | Public | Request OTP (email / phone) |
+| POST | `/v1/otp/verify` | Public | Verify OTP and login/register |
+| POST | `/v1/otp/resend` | Public | Resend OTP |
+| GET | `/v1/admin/dashboard` | Auth('admin') | Admin dashboard |
+
+> 🔐 **Auth** column legend  
+> • **Public** – No token required  
+> • **Auth** – Any authenticated user  
+> • **Auth('admin')** – Admin-only access
+
+### 🔄 OTP Authentication Flow
+
+#### 1. Request OTP
+Send a 6-digit OTP to the provided **phone number or email**.
+
+*Endpoint:* `POST /api/v1/otp/request`
+
+```json
+{
+  "identifier": "+919356319754",
+  "type": "login"           // optional | login | phone_verification | etc.
+}
+```
+
+*Successful Response*
+```jsonc
+{
+  "success": true,
+  "message": "OTP sent successfully",
+  "expiresAt": "2025-07-18T07:05:00Z",
+  "otp": "123456" // ONLY returned if NODE_ENV !== 'production'
+}
+```
+
+*Common Errors*
+- **400** – Invalid identifier
+- **429** – Too many OTP requests
+- **500** – Failed to send
+
+---
+
+#### 2. Verify OTP
+Verifies the OTP. If the phone/email is new, the account is provisioned; otherwise the user is logged in. Returns JWT **access** & **refresh** tokens.
+
+*Endpoint:* `POST /api/v1/otp/verify`
+
+```json
+{
+  "identifier": "+919356319754",
+  "otp": "123456"
+}
+```
+
+*Successful Response*
+```jsonc
+{
+  "success": true,
+  "message": "Authentication successful",
+  "tokenType": "Bearer",
+  "accessToken": "<JWT_ACCESS>",
+  "refreshToken": "<JWT_REFRESH>",
+  "expiresIn": 900,
+  "user": {
+    "_id": "60d21b4667d0d8992e610c85",
+    "phoneNumber": "+919356319754",
+    "role": "user",
+    "isPhoneVerified": true,
+    "createdAt": "2025-07-18T07:05:10Z"
+  }
+}
+```
+
+*Common Errors*
+- **400** – Missing/invalid OTP
+- **401** – Invalid or expired OTP
+- **403** – Max attempts exceeded
+
+Include the access token on subsequent requests:
+```
+Authorization: Bearer <accessToken>
+```
+
+---
+
+### 📌 Notes
+1. All request bodies must be JSON (`Content-Type: application/json`).
+2. Authentication uses **Bearer tokens**: `Authorization: Bearer <accessToken>`.
+3. Use refresh tokens to obtain new access tokens when expired.
+4. For OTP endpoints supply `identifier` (email or phone) and `otp`. For phone, include `recaptchaToken`.
+5. Error responses follow this schema:
+```jsonc
+{
+  "success": false,
+  "message": "Error message",
+  "error": {
+    "code": "ERROR_CODE",
+    "errors": []
+  },
+  "timestamp": "2025-07-18T07:00:00Z"
+}
+```
+
 - **Weather Integration** - Real-time weather data for Indian and global locations
 
 ## 🌦 Weather API Integration

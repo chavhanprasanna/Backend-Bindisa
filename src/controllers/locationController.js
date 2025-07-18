@@ -1,7 +1,7 @@
 import Farm from '../models/Farm.js';
 import { createSyncLog } from './offlineSyncController.js';
 
-export const saveFarmLocation = async (req, res) => {
+export const saveFarmLocation = async(req, res) => {
   try {
     const { farmId, latitude, longitude } = req.body;
     const userId = req.user._id;
@@ -9,7 +9,7 @@ export const saveFarmLocation = async (req, res) => {
     // Update farm with new location
     const farm = await Farm.findOneAndUpdate(
       { _id: farmId, farmer: userId },
-      { 
+      {
         location: {
           type: 'Point',
           coordinates: [longitude, latitude] // GeoJSON uses [longitude, latitude]

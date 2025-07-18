@@ -4,7 +4,7 @@ import {
   createCropCycle,
   getCropCyclesForFarm,
   updateCropCycle,
-  deleteCropCycle,
+  deleteCropCycle
 } from '../controllers/cropCycleController.js';
 
 const router = Router();

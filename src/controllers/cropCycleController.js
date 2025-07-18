@@ -19,7 +19,7 @@ export async function createCropCycle(req, res, next) {
       farmId,
       cropName,
       plantingDate,
-      expectedHarvestDate,
+      expectedHarvestDate
     });
 
     farm.cropCycles.push(cycle._id);

@@ -13,7 +13,7 @@ const cropCycleSchema = new mongoose.Schema({
   yieldUnit: String,
   totalRevenue: Number,
   totalCost: Number,
-  status: { type: String, enum: ['PLANNED', 'ACTIVE', 'HARVESTED', 'COMPLETED'], default: 'PLANNED' },
+  status: { type: String, enum: ['PLANNED', 'ACTIVE', 'HARVESTED', 'COMPLETED'], default: 'PLANNED' }
 }, { timestamps: true });
 
 export default mongoose.model('CropCycle', cropCycleSchema);

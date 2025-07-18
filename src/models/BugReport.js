@@ -11,7 +11,7 @@ const bugReportSchema = new Schema({
   category: { type: String },
   status: { type: String, enum: ['OPEN', 'IN_PROGRESS', 'RESOLVED'], default: 'OPEN' },
   deviceInfo: { type: Schema.Types.Mixed },
-  attachmentsUrls: [{ type: String }],
+  attachmentsUrls: [{ type: String }]
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 
 export default mongoose.model('BugReport', bugReportSchema);

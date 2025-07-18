@@ -1,28 +1,88 @@
-import dotenv from 'dotenv';
-import app from './app.js';
+import 'express-async-errors';
+import http from 'http';
 import mongoose from 'mongoose';
+import config from './config/env.js';
+import app from './app.js';
+import logger from './utils/logger.js';
+import { notFoundHandler, errorHandler } from './middlewares/errorHandler.js';
 
-// Recommended global settings to avoid deprecation noise and align with Mongoose v8+
+// Set mongoose options
 mongoose.set('bufferCommands', false);
 mongoose.set('strictQuery', true);
+mongoose.set('debug', config.NODE_ENV === 'development');
 
-dotenv.config();
-import { ensureJwtSecrets } from './utils/ensureSecrets.js';
-ensureJwtSecrets();
+// Create HTTP server
+const server = http.createServer(app);
+const { PORT, HOST, MONGODB_URI, NODE_ENV } = config;
 
-const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI;
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  // In production, you might want to perform some cleanup before exiting
+  process.exit(1);
+});
 
-(async () => {
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // In production, you might want to perform some cleanup before exiting
+  process.exit(1);
+});
+
+// Graceful shutdown
+const gracefulShutdown = async() => {
+  logger.info('SIGTERM received. Shutting down gracefully...');
+
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log('MongoDB connected');
+    // Close the server
+    server.close(async() => {
+      logger.info('HTTP server closed');
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+      // Close database connection
+      await mongoose.connection.close(false);
+      logger.info('MongoDB connection closed');
+
+      process.exit(0);
     });
-  } catch (err) {
-    console.error('Failed to start server', err);
+  } catch (error) {
+    logger.error('Error during shutdown:', error);
     process.exit(1);
   }
-})();
+};
+
+// Handle termination signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+
+// Start the server
+const startServer = async() => {
+  try {
+    // Connect to MongoDB
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000
+    });
+
+    logger.info('MongoDB connected');
+
+    // Start listening
+    server.listen(PORT, HOST, () => {
+      logger.info(`Server running in ${NODE_ENV} mode on http://${HOST}:${PORT}`);
+    });
+
+    // Handle 404 routes
+    app.use(notFoundHandler);
+
+    // Handle errors
+    app.use(errorHandler);
+
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the application
+startServer();
+
+export default server;

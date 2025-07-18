@@ -7,7 +7,7 @@ const sensorSchema = new mongoose.Schema({
   sensorType: { type: String, enum: ['SOIL_MOISTURE', 'PH', 'NPK', 'WEATHER'] },
   sensorModel: String,
   status: { type: String, enum: ['ACTIVE', 'INACTIVE', 'MAINTENANCE'], default: 'ACTIVE' },
-  lastSeen: Date,
+  lastSeen: Date
 }, { timestamps: true });
 
 export default mongoose.model('Sensor', sensorSchema);

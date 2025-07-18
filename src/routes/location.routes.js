@@ -12,7 +12,7 @@ router.get('/location/permission/request', auth(), requestLocationPermission);
 router.get('/location/permission/status', auth(), checkLocationPermission);
 
 // Save farm location (called after permission is granted)
-router.post('/farms/:farmId/location', 
+router.post('/farms/:farmId/location',
   auth('FARMER', 'AGENT'),
   checkLocationPermission,
   saveFarmLocation
@@ -21,8 +21,8 @@ router.post('/farms/:farmId/location',
 // Get nearby farms (example of using location)
 router.get('/farms/nearby', auth(), (req, res) => {
   // This would be implemented to find farms near the user's location
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'Nearby farms endpoint',
     note: 'Implementation would use MongoDB geospatial queries'
   });

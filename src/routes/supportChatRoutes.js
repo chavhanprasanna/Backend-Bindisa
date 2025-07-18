@@ -4,7 +4,7 @@ import {
   createConversation,
   listConversations,
   getMessages,
-  postMessage,
+  postMessage
 } from '../controllers/supportChatController.js';
 
 const router = Router();

@@ -15,7 +15,7 @@ export async function createSuggestion(req, res, next) {
     const suggestion = await CropSuggestion.create({
       userId: req.user.sub,
       requestDetails,
-      recommendedCrops,
+      recommendedCrops
     });
     res.status(201).json(suggestion);
   } catch (err) {

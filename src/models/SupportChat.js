@@ -7,7 +7,7 @@ const messageSchema = new Schema({
   _id: { type: String, default: uuidv4 },
   senderId: { type: String, ref: 'User', required: true },
   text: { type: String, required: true },
-  timestamp: { type: Date, default: Date.now },
+  timestamp: { type: Date, default: Date.now }
 }, { _id: false });
 
 const supportChatSchema = new Schema({
@@ -16,7 +16,7 @@ const supportChatSchema = new Schema({
   agentId: { type: String, ref: 'User' },
   status: { type: String, enum: ['OPEN', 'CLOSED'], default: 'OPEN' },
   messages: { type: [messageSchema], default: [] },
-  lastMessageAt: { type: Date },
+  lastMessageAt: { type: Date }
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 
 export default mongoose.model('SupportChat', supportChatSchema);

@@ -1,8 +1,24 @@
 import express from 'express';
-import morgan from 'morgan';
+import helmet from 'helmet';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import compression from 'compression';
+import mongoSanitize from 'express-mongo-sanitize';
+import xss from 'xss-clean';
+import hpp from 'hpp';
+import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
+// Import configurations
+import config from './config/env.js';
+import logger from './utils/logger.js';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
+import { apiLimiter } from './middlewares/rateLimiter.js';
+import securityMiddleware from './middlewares/security.js';
+
+// Import routes
 import authRoutes from './routes/auth.routes.js';
 import userRoutes from './routes/user.routes.js';
 import farmRoutes from './routes/farm.routes.js';
@@ -16,34 +32,118 @@ import profitEntryRoutes from './routes/profitEntryRoutes.js';
 import offlineSyncRoutes from './routes/offlineSyncRoutes.js';
 import videoTutorialRoutes from './routes/videoTutorialRoutes.js';
 import locationRoutes from './routes/location.routes.js';
+import otpRoutes from './routes/otp.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
-import errorHandler from './middlewares/errorHandler.js';
-
-dotenv.config();
-
+// Initialize express app
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
+// Get current directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-app.get('/status', (req, res) => res.json({ status: 'OK', timestamp: Date.now() }));
+// Trust first proxy (important for rate limiting and secure cookies)
+app.set('trust proxy', 1);
 
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
-app.use('/farms', farmRoutes);
-app.use('/api/v1/cycles', cycleRoutes);
-app.use('/api/v1/tests', testRoutes);
-app.use('/notifications', notificationRoutes);
-app.use('/support/bug-reports', bugReportRoutes);
-app.use('/support/chat', supportChatRoutes);
-app.use('/ai/crop-suggestions', cropSuggestionRoutes);
-app.use('/profit-calculator', profitEntryRoutes);
-app.use('/sync', offlineSyncRoutes);
-app.use('/support/tutorials', videoTutorialRoutes);
-app.use('/api', locationRoutes);
+// Set security HTTP headers
+app.use(helmet());
 
-app.use('*', (req, res) => res.status(404).json({ message: 'Route not found' }));
+// Apply security middleware
+app.use(securityMiddleware);
+
+// Enable CORS
+app.use(cors({
+  origin: config.CORS_ORIGIN,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Authorization', 'X-Refresh-Token']
+}));
+
+// Parse JSON request body
+app.use(express.json({ limit: '10kb' }));
+
+// Parse URL-encoded request body
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Parse cookies
+app.use(cookieParser());
+
+// Data sanitization against NoSQL query injection
+app.use(mongoSanitize());
+
+// Data sanitization against XSS
+app.use(xss());
+
+// Prevent parameter pollution
+app.use(hpp({
+  whitelist: [
+    'duration', 'ratingsQuantity', 'ratingsAverage', 'maxGroupSize', 'difficulty', 'price'
+  ]
+}));
+
+// Compress all responses
+app.use(compression());
+
+// Rate limiting
+app.use('/api', apiLimiter);
+
+// Logging middleware in development
+if (config.NODE_ENV === 'development') {
+  const morgan = await import('morgan');
+  app.use(morgan.default('dev'));
+}
+
+// Health check endpoint
+app.get('/status', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: config.NODE_ENV,
+    version: process.env.npm_package_version
+  });
+});
+
+// API routes
+const apiRouter = express.Router();
+
+// Mount API routes
+apiRouter.use('/v1/auth', authRoutes);
+apiRouter.use('/v1/users', userRoutes);
+apiRouter.use('/v1/farms', farmRoutes);
+apiRouter.use('/v1/cycles', cycleRoutes);
+apiRouter.use('/v1/tests', testRoutes);
+apiRouter.use('/v1/notifications', notificationRoutes);
+apiRouter.use('/v1/support/bug-reports', bugReportRoutes);
+apiRouter.use('/v1/support/chat', supportChatRoutes);
+apiRouter.use('/v1/ai/crop-suggestions', cropSuggestionRoutes);
+apiRouter.use('/v1/profit-calculator', profitEntryRoutes);
+apiRouter.use('/v1/sync', offlineSyncRoutes);
+apiRouter.use('/v1/support/tutorials', videoTutorialRoutes);
+apiRouter.use('/v1/locations', locationRoutes);
+apiRouter.use('/v1/otp', otpRoutes);
+apiRouter.use('/v1/admin', adminRoutes);
+
+// Mount API router
+app.use('/api', apiRouter);
+
+// Serve static files in production
+if (config.NODE_ENV === 'production') {
+  // Set static folder
+  const clientPath = join(__dirname, '../../client/dist');
+  app.use(express.static(clientPath));
+
+  // Handle SPA
+  app.get('*', (req, res) => {
+    res.sendFile(join(clientPath, 'index.html'));
+  });
+}
+
+// Handle 404 routes
+app.use(notFoundHandler);
+
+// Global error handler
 app.use(errorHandler);
 
 export default app;

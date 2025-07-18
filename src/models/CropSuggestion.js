@@ -8,7 +8,7 @@ const cropSuggestionSchema = new Schema({
   userId: { type: String, ref: 'User', required: true, index: true },
   requestDetails: { type: Schema.Types.Mixed, required: true },
   recommendedCrops: { type: [Schema.Types.Mixed], required: true },
-  cropRotationPlan: { type: [Schema.Types.Mixed] },
+  cropRotationPlan: { type: [Schema.Types.Mixed] }
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 
 export default mongoose.model('CropSuggestion', cropSuggestionSchema);

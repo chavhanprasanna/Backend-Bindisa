@@ -10,7 +10,7 @@ const aiRecommendationSchema = new Schema({
   type: { type: String, enum: ['SOIL_FERTILITY', 'WARNING'], required: true },
   title: { type: String, required: true },
   description: { type: String, required: true },
-  actionRequired: { type: String },
+  actionRequired: { type: String }
 }, { timestamps: true });
 
 export default mongoose.model('AIRecommendation', aiRecommendationSchema);

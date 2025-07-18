@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "469520984478",
+    "project_id": "bindisa-a6f5f",
+    "storage_bucket": "bindisa-a6f5f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469520984478:android:142e8e908692124c9e4e8f",
+        "android_client_info": {
+          "package_name": "Bindisa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9mV5xu4WPvnwQU6KXYForvxJ5QXeJwRY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -3,7 +3,7 @@ import { auth } from '../middlewares/auth.js';
 import {
   submitSoilTest,
   getSoilTestsForFarm,
-  getRecommendationsForFarm,
+  getRecommendationsForFarm
 } from '../controllers/soilTestController.js';
 
 const router = Router();

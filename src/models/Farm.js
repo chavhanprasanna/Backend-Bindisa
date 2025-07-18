@@ -7,8 +7,8 @@ const locationSchema = new mongoose.Schema({
   state: String,
   geo: {
     type: { type: String, default: 'Point' },
-    coordinates: [Number],
-  },
+    coordinates: [Number]
+  }
 }, { _id: false });
 
 const farmSchema = new mongoose.Schema({
@@ -18,7 +18,7 @@ const farmSchema = new mongoose.Schema({
   location: locationSchema,
   sizeAcres: Number,
   notes: String,
-  cropCycles: [{ type: String, ref: 'CropCycle' }],
+  cropCycles: [{ type: String, ref: 'CropCycle' }]
 }, { timestamps: true });
 
 farmSchema.index({ 'location.geo': '2dsphere' });

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bindisa - OTP Authentication</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      text-align: center;
+    }
+    .container {
+      margin-top: 50px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .error {
+      color: #d32f2f;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .success {
+      color: #388e3c;
+      margin: 10px 0;
+      font-size: 14px;
+    }
+    .otp-container {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Phone Authentication</h2>
+    
+    <!-- Phone Number Form -->
+    <div id="phone-form">
+      <div class="form-group">
+        <label for="phone">Phone Number</label>
+        <input type="tel" id="phone" placeholder="Enter phone number" required>
+      </div>
+      <button id="send-otp">Send OTP</button>
+      <div id="phone-error" class="error"></div>
+    </div>
+
+    <!-- OTP Form (initially hidden) -->
+    <div id="otp-container" class="otp-container">
+      <div class="form-group">
+        <label for="otp">Enter OTP</label>
+        <input type="text" id="otp" placeholder="Enter 6-digit OTP" maxlength="6" required>
+      </div>
+      <button id="verify-otp">Verify OTP</button>
+      <div id="otp-error" class="error"></div>
+      <div id="otp-success" class="success"></div>
+      <p><a href="#" id="resend-otp">Resend OTP</a></p>
+    </div>
+  </div>
+
+  <!-- reCAPTCHA container (invisible) -->
+  <div id="recaptcha-container"></div>
+
+  <!-- Firebase and App Scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -11,7 +11,7 @@ export async function createConversation(req, res, next) {
     const chat = await SupportChat.create({
       userId: req.user.sub,
       messages: text ? [{ _id: uuidv4(), senderId: req.user.sub, text, timestamp: new Date() }] : [],
-      lastMessageAt: new Date(),
+      lastMessageAt: new Date()
     });
     res.status(201).json(chat);
   } catch (err) {

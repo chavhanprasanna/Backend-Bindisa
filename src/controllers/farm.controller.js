@@ -11,16 +11,16 @@ export async function createFarm(req, res, next) {
       location: {
         village: location.village,
         district: location.district,
-        state: location.state,
+        state: location.state
       },
-      sizeAcres,
+      sizeAcres
     };
 
     // Only add geo object if coordinates are valid
     if (latitude && longitude) {
       farmData.location.geo = {
         type: 'Point',
-        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]
       };
     }
 
@@ -55,7 +55,7 @@ export async function updateFarm(req, res, next) {
     const farm = await Farm.findOneAndUpdate(
       { _id: req.params.id, ownerId: req.user.sub },
       req.body,
-      { new: true },
+      { new: true }
     );
     if (!farm) return res.status(404).json({ message: 'Not found' });
     res.json(farm);

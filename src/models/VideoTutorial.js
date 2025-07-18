@@ -10,7 +10,7 @@ const videoTutorialSchema = new Schema({
   category: { type: String, required: true },
   videoUrl: { type: String, required: true },
   thumbnailUrl: { type: String },
-  durationMinutes: { type: Number },
+  durationMinutes: { type: Number }
 }, { timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } });
 
 export default mongoose.model('VideoTutorial', videoTutorialSchema);
