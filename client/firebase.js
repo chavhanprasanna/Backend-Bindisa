@@ -15,11 +15,13 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // Set up reCAPTCHA verifier
-let appVerifier;
-const setupRecaptcha = (containerId = 'recaptcha-container') => {
-  appVerifier = new RecaptchaVerifier(containerId, {
-    size: 'invisible',
+export const setupRecaptcha = (containerId) => {
+  return new RecaptchaVerifier(containerId, {
+    'size': 'invisible',
+    'callback': (response) => {
+      console.log('reCAPTCHA solved:', response);
+    }
   }, auth);
 };
 
-export { auth, appVerifier, setupRecaptcha };
+export { auth };

@@ -94,6 +94,21 @@ if (config.NODE_ENV === 'development') {
   app.use(morgan.default('dev'));
 }
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Bindisa Backend API',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+    environment: config.NODE_ENV,
+    endpoints: {
+      health: '/status',
+      api: '/api/v1'
+    }
+  });
+});
+
 // Health check endpoint
 app.get('/status', (req, res) => {
   res.status(200).json({

@@ -6,45 +6,133 @@ import {
   PHONE_REGEX,
   DEFAULT_COUNTRY_CODE
 } from '../config/otp.config.js';
-import { rateLimit } from '../utils/rateLimiter.js';
-import { validateRequest } from '../middleware/validation.js';
+import rateLimit from 'express-rate-limit';
+import { validateRequest } from '../middlewares/validateRequest.js';
 import { body } from 'express-validator';
-import { RecaptchaVerifier } from 'firebase/auth';
-import { auth as firebaseAuth } from '../services/sms.service.js';
+// Removed RecaptchaVerifier import as it's client-side only
+import smsService, { auth as firebaseAuth } from '../services/sms.service.js';
 import User from '../models/User.js';
 import JWT from '../utils/jwt.js';
-import ApiError from '../utils/apiError.js';
+import { ApiError } from '../utils/apiError.js';
 
 const router = express.Router();
+
+// GET endpoints for documentation and debugging
+
+/**
+ * @route   GET /api/v1/otp
+ * @desc    Get OTP service information
+ * @access  Public
+ */
+router.get('/', (req, res) => {
+  res.json({
+    service: 'OTP Service',
+    version: '1.0.0',
+    endpoints: {
+      request: 'POST /api/v1/otp/request',
+      verify: 'POST /api/v1/otp/verify',
+      resend: 'POST /api/v1/otp/resend'
+    },
+    supportedTypes: Object.values(OTP_TYPES),
+    deliveryMethods: Object.values(OTP_DELIVERY_METHODS)
+  });
+});
+
+/**
+ * @route   GET /api/v1/otp/request
+ * @desc    Documentation for OTP request endpoint
+ * @access  Public
+ */
+router.get('/request', (req, res) => {
+  res.json({
+    method: 'POST',
+    endpoint: '/api/v1/otp/request',
+    description: 'Request a new OTP via SMS',
+    requiredFields: {
+      identifier: 'Phone number (with country code)',
+      type: 'OTP type (optional, defaults to "login")'
+    },
+    supportedTypes: Object.values(OTP_TYPES),
+    rateLimit: '5 requests per hour per IP',
+    example: {
+      identifier: '+1234567890',
+      type: 'login'
+    }
+  });
+});
+
+/**
+ * @route   GET /api/v1/otp/verify
+ * @desc    Documentation for OTP verification endpoint
+ * @access  Public
+ */
+router.get('/verify', (req, res) => {
+  res.json({
+    method: 'POST',
+    endpoint: '/api/v1/otp/verify',
+    description: 'Verify an OTP code received via SMS',
+    requiredFields: {
+      identifier: 'Phone number (with country code)',
+      otp: 'The OTP code received via SMS',
+      type: 'OTP type (optional, defaults to "login")'
+    },
+    rateLimit: '10 attempts per 15 minutes per IP',
+    example: {
+      identifier: '+1234567890',
+      otp: '123456',
+      type: 'login'
+    }
+  });
+});
 
 // Input validation schemas
 const requestOTPValidation = [
   body('identifier')
     .notEmpty()
-    .withMessage('Email or phone number is required')
-    .custom((value) => {
-      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-      const isPhone = PHONE_REGEX.test(value);
-
-      if (!isEmail && !isPhone) {
-        throw new Error('Please provide a valid email address or phone number');
+    .withMessage('Phone number is required')
+    .custom(async (value, { req }) => {
+      console.log('Validating phone number:', value);
+      if (!value) {
+        console.log('Phone number is empty');
+        return false;
       }
-      return true;
+      
+      // Validate phone number format
+      console.log('Checking if identifier is a valid phone number');
+      try {
+        console.log('Attempting to format phone number:', value);
+        const formattedNumber = smsService.formatPhoneNumber(value);
+        console.log('Formatted phone number:', formattedNumber);
+        const isValid = smsService.isValidPhoneNumber(formattedNumber);
+        console.log('Is valid phone number?', isValid);
+        if (!isValid) {
+          throw new Error('Please provide a valid phone number');
+        }
+        return isValid;
+      } catch (error) {
+        console.error('Error validating phone number:', error);
+        throw new Error('Please provide a valid phone number in format +1234567890');
+      }
     }),
   body('type')
     .optional()
     .isIn(Object.values(OTP_TYPES))
-    .withMessage('Invalid OTP type'),
-  body('recaptchaToken')
-    .optional()
-    .isString()
-    .withMessage('reCAPTCHA token must be a string')
+    .withMessage('Invalid OTP type')
 ];
 
 const verifyOTPValidation = [
   body('identifier')
     .notEmpty()
-    .withMessage('Email or phone number is required'),
+    .withMessage('Phone number is required')
+    .custom(async (value, { req }) => {
+      if (!value) return false;
+      try {
+        const formattedNumber = smsService.formatPhoneNumber(value);
+        return smsService.isValidPhoneNumber(formattedNumber);
+      } catch (error) {
+        throw new Error('Please provide a valid phone number');
+      }
+    }),
   body('otp')
     .isLength({ min: 4, max: 8 })
     .withMessage('OTP must be between 4 and 8 characters')
@@ -62,9 +150,9 @@ const verifyOTPValidation = [
 
 /**
  * @route   POST /api/v1/otp/request
- * @desc    Request a new OTP
+ * @desc    Request a new OTP via SMS
  * @access  Public
- * @body    {string} email - User's email address
+ * @body    {string} identifier - User's phone number with country code
  * @body    {string} [type=login] - Type of OTP (login, register, reset_password, etc.)
  * @returns {Object} Success message and expiration time
  */
@@ -86,40 +174,24 @@ router.post(
   ],
   async(req, res, next) => {
     try {
-      const { identifier, type = OTP_TYPES.LOGIN, recaptchaToken } = req.body;
-      const isEmail = identifier.includes('@');
-
-      // For phone numbers, we need to verify reCAPTCHA
-      let recaptchaVerifier = null;
-      if (!isEmail) {
-        if (!recaptchaToken) {
-          throw new ApiError(400, 'reCAPTCHA token is required for phone verification');
-        }
-
-        // In a real implementation, you would verify the reCAPTCHA token
-        recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-          size: 'invisible',
-          'token': recaptchaToken
-        });
-      }
+      const { identifier, type = OTP_TYPES.LOGIN } = req.body;
 
       // Generate and store OTP
       const result = await otpService.generateAndStoreOTP(type, identifier, {
-        deliveryMethod: isEmail ? OTP_DELIVERY_METHODS.EMAIL : OTP_DELIVERY_METHODS.SMS,
-        recaptchaVerifier,
+        deliveryMethod: OTP_DELIVERY_METHODS.SMS,
         metadata: {
           ip: req.ip,
           userAgent: req.get('user-agent')
         }
       });
 
-      // In production, OTP is sent via email/SMS automatically
+      // In production, OTP is sent via SMS automatically
       if (process.env.NODE_ENV === 'production' || result.testMode) {
         res.json({
           success: true,
-          message: 'OTP sent successfully',
+          message: 'OTP sent successfully via SMS',
           expiresAt: result.expiresAt,
-          method: isEmail ? 'email' : 'sms',
+          method: 'sms',
           testMode: result.testMode || false
         });
       } else {
@@ -129,7 +201,7 @@ router.post(
           message: 'OTP generated (development mode)',
           otp: result.otp,
           expiresAt: result.expiresAt,
-          method: isEmail ? 'email' : 'sms',
+          method: 'sms',
           testMode: true
         });
       }
@@ -141,12 +213,12 @@ router.post(
 
 /**
  * @route   POST /api/v1/otp/verify
- * @desc    Verify an OTP
+ * @desc    Verify an OTP received via SMS
  * @access  Public
- * @body    {string} email - User's email address
- * @body    {string} otp - The OTP to verify
+ * @body    {string} identifier - User's phone number with country code
+ * @body    {string} otp - The OTP code received via SMS
  * @body    {string} [type=login] - Type of OTP (login, register, reset_password, etc.)
- * @returns {Object} Verification result
+ * @returns {Object} Verification result with JWT tokens
  */
 router.post(
   '/verify',
@@ -162,6 +234,28 @@ router.post(
   async(req, res, next) => {
     try {
       const { identifier, otp, type = OTP_TYPES.LOGIN, verificationId } = req.body;
+      
+      // Add null checks for identifier
+      if (!identifier) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Identifier (email or phone) is required'
+          }
+        });
+      }
+      
+      if (typeof identifier !== 'string') {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Identifier must be a string'
+          }
+        });
+      }
+      
       const isEmail = identifier.includes('@');
 
       // Verify OTP
@@ -238,27 +332,11 @@ router.post(
   ],
   async(req, res, next) => {
     try {
-      const { identifier, type = OTP_TYPES.LOGIN, recaptchaToken } = req.body;
-      const isEmail = identifier.includes('@');
-
-      // For phone numbers, we need to verify reCAPTCHA
-      let recaptchaVerifier = null;
-      if (!isEmail) {
-        if (!recaptchaToken) {
-          throw new ApiError(400, 'reCAPTCHA token is required for phone verification');
-        }
-
-        // In a real implementation, you would verify the reCAPTCHA token
-        recaptchaVerifier = new RecaptchaVerifier(firebaseAuth, 'recaptcha-container', {
-          size: 'invisible',
-          'token': recaptchaToken
-        });
-      }
+      const { identifier, type = OTP_TYPES.LOGIN } = req.body;
 
       // This will generate a new OTP, invalidating the previous one
       const result = await otpService.generateAndStoreOTP(type, identifier, {
-        deliveryMethod: isEmail ? OTP_DELIVERY_METHODS.EMAIL : OTP_DELIVERY_METHODS.SMS,
-        recaptchaVerifier,
+        deliveryMethod: OTP_DELIVERY_METHODS.SMS,
         metadata: {
           ip: req.ip,
           userAgent: req.get('user-agent'),
@@ -266,13 +344,13 @@ router.post(
         }
       });
 
-      // In production, OTP is sent via email/SMS automatically
+      // In production, OTP is sent via SMS automatically
       if (process.env.NODE_ENV === 'production' || result.testMode) {
         res.json({
           success: true,
-          message: 'New OTP sent successfully',
+          message: 'New OTP sent successfully via SMS',
           expiresAt: result.expiresAt,
-          method: isEmail ? 'email' : 'sms',
+          method: 'sms',
           testMode: result.testMode || false
         });
       } else {
@@ -282,7 +360,7 @@ router.post(
           message: 'New OTP generated (development mode)',
           otp: result.otp,
           expiresAt: result.expiresAt,
-          method: isEmail ? 'email' : 'sms',
+          method: 'sms',
           testMode: true
         });
       }

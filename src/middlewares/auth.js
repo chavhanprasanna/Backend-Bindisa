@@ -1,8 +1,42 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-// Token blacklist to store invalidated tokens
-const tokenBlacklist = new Set();
+// Token blacklist with LRU cache to prevent memory leaks
+class LRUTokenBlacklist {
+  constructor(maxSize = 1000) {
+    this.maxSize = maxSize;
+    this.cache = new Map();
+  }
+
+  add(token) {
+    // Remove oldest entries if at capacity
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    
+    this.cache.set(token, Date.now());
+    
+    // Auto-remove expired tokens
+    const decoded = jwt.decode(token);
+    if (decoded?.exp) {
+      const expiresIn = decoded.exp * 1000 - Date.now();
+      if (expiresIn > 0) {
+        setTimeout(() => this.cache.delete(token), expiresIn);
+      }
+    }
+  }
+
+  has(token) {
+    return this.cache.has(token);
+  }
+
+  delete(token) {
+    return this.cache.delete(token);
+  }
+}
+
+const tokenBlacklist = new LRUTokenBlacklist();
 
 /**
  * Add token to blacklist
@@ -10,14 +44,6 @@ const tokenBlacklist = new Set();
  */
 export const addToBlacklist = (token) => {
   tokenBlacklist.add(token);
-  // Optional: Set a timeout to remove the token from blacklist after it expires
-  const decoded = jwt.decode(token);
-  if (decoded?.exp) {
-    const expiresIn = decoded.exp * 1000 - Date.now();
-    if (expiresIn > 0) {
-      setTimeout(() => tokenBlacklist.delete(token), expiresIn);
-    }
-  }
 };
 
 /**

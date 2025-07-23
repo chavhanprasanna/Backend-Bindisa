@@ -1,22 +1,22 @@
 export default {
-  transform: {},
-  extensionsToTreatAsEsm: ['.js'],
   testEnvironment: 'node',
-  setupFilesAfterEnv: ['./tests/setup.js'],
   testTimeout: 30000,
-  collectCoverage: true,
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/app.js',
-    '!src/server.js'
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  collectCoverage: false,
   testMatch: [
     '**/tests/**/*.test.js',
     '**/tests/**/*.spec.js'
   ],
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
-  }
+  },
+  transform: {},
+  extensionsToTreatAsEsm: ['.js'],
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  },
+  moduleFileExtensions: ['js', 'json'],
+  testPathIgnorePatterns: ['/node_modules/', '/tests/setup.js'],
+  verbose: true
 };

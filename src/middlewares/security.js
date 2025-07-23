@@ -209,9 +209,12 @@ const securityHeaders = [
   (req, res, next) => {
     // Log potential XSS attempts
     const xssRegex = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
-    const hasXSS = JSON.stringify(req.body).match(xssRegex) ||
-                  JSON.stringify(req.query).match(xssRegex) ||
-                  JSON.stringify(req.params).match(xssRegex);
+    const bodyStr = JSON.stringify(req.body || {});
+    const queryStr = JSON.stringify(req.query || {});
+    const paramsStr = JSON.stringify(req.params || {});
+    const hasXSS = bodyStr.match(xssRegex) ||
+                  queryStr.match(xssRegex) ||
+                  paramsStr.match(xssRegex);
 
     if (hasXSS) {
       logger.warn(`Potential XSS attack detected from IP: ${req.ip}`, {
@@ -225,9 +228,9 @@ const securityHeaders = [
 
     // Log potential NoSQL injection attempts
     const nosqlRegex = /\$[a-zA-Z]+|\/\*.*\*\//;
-    const hasNoSQL = JSON.stringify(req.body).match(nosqlRegex) ||
-                    JSON.stringify(req.query).match(nosqlRegex) ||
-                    JSON.stringify(req.params).match(nosqlRegex);
+    const hasNoSQL = bodyStr.match(nosqlRegex) ||
+                    queryStr.match(nosqlRegex) ||
+                    paramsStr.match(nosqlRegex);
 
     if (hasNoSQL) {
       logger.warn(`Potential NoSQL injection attempt from IP: ${req.ip}`, {

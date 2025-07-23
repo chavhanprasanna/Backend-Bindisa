@@ -16,10 +16,10 @@ class JWT {
    * @returns {string} JWT token
    */
   static generateToken(payload, expiresIn = '1d', secret) {
-    const jwtSecret = secret || config.JWT_SECRET;
+    const jwtSecret = secret || config.JWT_ACCESS_SECRET;
 
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
+      throw new Error('JWT_ACCESS_SECRET is not defined in environment variables');
     }
 
     try {
@@ -43,10 +43,10 @@ class JWT {
    * @throws {ApiError} If token is invalid or expired
    */
   static verifyToken(token, secret) {
-    const jwtSecret = secret || config.JWT_SECRET;
+    const jwtSecret = secret || config.JWT_ACCESS_SECRET;
 
     if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
+      throw new Error('JWT_ACCESS_SECRET is not defined in environment variables');
     }
 
     try {

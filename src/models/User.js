@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
+import { PHONE_REGEX } from '../config/otp.config.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -20,7 +21,7 @@ const userSchema = new mongoose.Schema(
       index: true,
       validate: {
         validator: function(v) {
-          return /^[0-9]{10,15}$/.test(v);
+          return PHONE_REGEX.test(v);
         },
         message: props => `${props.value} is not a valid phone number!`
       }
@@ -91,10 +92,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Indexes
-userSchema.index({ phoneNumber: 1 }, { unique: true });
-userSchema.index({ email: 1 }, { unique: true, sparse: true });
-userSchema.index({ firebaseUid: 1 }, { unique: true, sparse: true });
 
 // Pre-save hook to hash password if modified
 userSchema.pre('save', async function(next) {

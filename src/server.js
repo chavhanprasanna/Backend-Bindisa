@@ -5,6 +5,7 @@ import config from './config/env.js';
 import app from './app.js';
 import logger from './utils/logger.js';
 import { notFoundHandler, errorHandler } from './middlewares/errorHandler.js';
+import { initializeRedis } from './utils/cache.js';
 
 // Set mongoose options
 mongoose.set('bufferCommands', false);
@@ -57,24 +58,21 @@ process.on('SIGINT', gracefulShutdown);
 // Start the server
 const startServer = async() => {
   try {
-    // Connect to MongoDB
+    // 1. Connect to MongoDB first
     await mongoose.connect(MONGODB_URI, {
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000
     });
+    logger.info('✅ MongoDB connected');
 
-    logger.info('MongoDB connected');
+    // 2. Initialize Redis cache
+    await initializeRedis();
+    logger.info('✅ Cache initialization completed');
 
-    // Start listening
+    // 3. Start listening only after all dependencies are ready
     server.listen(PORT, HOST, () => {
-      logger.info(`Server running in ${NODE_ENV} mode on http://${HOST}:${PORT}`);
+      logger.info(`🚀 Server running in ${NODE_ENV} mode on http://${HOST}:${PORT}`);
     });
-
-    // Handle 404 routes
-    app.use(notFoundHandler);
-
-    // Handle errors
-    app.use(errorHandler);
 
   } catch (error) {
     logger.error('Failed to start server:', error);

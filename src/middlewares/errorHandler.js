@@ -1,7 +1,6 @@
 import logger from '../utils/logger.js';
 import { ValidationError } from 'express-validation';
-import celebratePkg from 'celebrate';
-const { isCelebrate } = celebratePkg;
+import { isCelebrateError } from 'celebrate';
 import { isBoom } from '@hapi/boom';
 
 // Error response format
@@ -37,7 +36,7 @@ function errorHandler(err, req, res, next) {
   let stack;
 
   // Handle different types of errors
-  if (isCelebrate(err)) {
+    if (isCelebrateError(err)) {
     // Joi validation error
     status = 400;
     code = 'VALIDATION_ERROR';
