@@ -1,6 +1,6 @@
 # Dependencies
 node_modules/
-
+google-services.json
 # Environment variables
 .env
 
@@ -25,3 +25,5 @@ logs
 .Trashes
 ehthumbs.db
 Thumbs.db
+src/config/*.json
+client/firebase.js
